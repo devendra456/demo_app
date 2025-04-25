@@ -4,23 +4,19 @@ import 'package:demo_app/features/home/domain/use_cases/load_users_use_case.dart
 import 'package:get/get.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
-enum SortOrder { ascending, descending, none }
 
 class HomeController extends GetxController {
   final LoadUsersUseCase _loadUsersUseCase;
 
   // Observable variables
   final RxString selectedGender = ''.obs;
-  final RxString searchQuery = ''.obs;
-  final Rx<SortOrder> sortOrder = SortOrder.none.obs;
 
   // Pagination variables
   static const _pageSize = 20;
   bool dataLoading = false;
-  
+
   // Paging controller
   late final PagingController<int, UserEntity> pagingController;
-
 
   final List<UserEntity> buffer = [];
 
@@ -35,8 +31,6 @@ class HomeController extends GetxController {
 
     // Listen to changes in filters and search to refresh the list
     ever(selectedGender, (_) => refreshUsers());
-    ever(searchQuery, (_) => _applyLocalFilters());
-    ever(sortOrder, (_) => _applyLocalFilters());
   }
 
   Future<void> _fetchPage(int pageKey) async {
@@ -65,7 +59,6 @@ class HomeController extends GetxController {
             pagingController.appendPage(newUsers, pageKey + 1);
           }
           buffer.addAll(newUsers);
-          _applyLocalFilters();
         },
       );
     } catch (e) {
@@ -76,30 +69,7 @@ class HomeController extends GetxController {
   }
 
   // Apply local filters (search and sort)
-  void _applyLocalFilters() {
 
-    List<UserEntity> filteredItems = List.of(buffer);
-
-    // Apply search filter
-    if (searchQuery.value.isNotEmpty) {
-      filteredItems = filteredItems
-          .where((user) => user.matchesSearch(searchQuery.value))
-          .toList();
-    }
-
-    // Apply sorting
-    if (sortOrder.value != SortOrder.none) {
-      filteredItems.sort((a, b) {
-        int comparison = a.fullName.compareTo(b.fullName);
-        return sortOrder.value == SortOrder.ascending
-            ? comparison
-            : -comparison;
-      });
-    }
-
-    // Update the paging controller with filtered items
-    pagingController.itemList = filteredItems;
-  }
 
   // Refresh the user list
   Future<void> refreshUsers() async {
@@ -109,29 +79,13 @@ class HomeController extends GetxController {
 
   // Set gender filter
   void setGenderFilter(String gender) {
-    if (selectedGender.value == gender) {
-      selectedGender.value = ''; // Clear filter if same gender is selected
-    } else {
+    if (selectedGender.value != gender) {
       selectedGender.value = gender;
-    }
-    refreshUsers(); // Refresh to get filtered results from API
-  }
-
-  // Set search query
-  void setSearchQuery(String query) {
-    searchQuery.value = query;
-  }
-
-  // Toggle sort order
-  void toggleSortOrder() {
-    if (sortOrder.value == SortOrder.none) {
-      sortOrder.value = SortOrder.ascending;
-    } else if(sortOrder.value == SortOrder.ascending){
-      sortOrder.value = SortOrder.descending;
-    }else{
-      sortOrder.value = SortOrder.none;
+      refreshUsers();
     }
   }
+
+
 
   @override
   void dispose() {
