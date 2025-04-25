@@ -18,14 +18,13 @@ class HomeView extends GetView<HomeController> {
         actions: [
           IconButton(
             icon: Obx(
-                  () =>
-                  Icon(
-                    controller.sortOrder.value == SortOrder.ascending
-                        ? Icons.arrow_upward
-                        : controller.sortOrder.value == SortOrder.descending
-                        ? Icons.arrow_downward
-                        : Icons.sort,
-                  ),
+              () => Icon(
+                controller.sortOrder.value == SortOrder.ascending
+                    ? Icons.arrow_upward
+                    : controller.sortOrder.value == SortOrder.descending
+                    ? Icons.arrow_downward
+                    : Icons.sort,
+              ),
             ),
             onPressed: controller.toggleSortOrder,
             tooltip: 'Sort by name',
@@ -38,13 +37,16 @@ class HomeView extends GetView<HomeController> {
           _buildFilterChips(),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => Future.sync(
-                () => controller.pagingController.refresh(),
-              ),
+              onRefresh:
+                  () => Future.sync(() {
+                    controller.pagingController.refresh();
+                    controller.buffer.clear();
+                  }),
               child: PagedListView<int, UserEntity>(
                 pagingController: controller.pagingController,
                 builderDelegate: PagedChildBuilderDelegate<UserEntity>(
-                  itemBuilder: (context, user, index) => _buildUserListItem(user),
+                  itemBuilder:
+                      (context, user, index) => _buildUserListItem(user),
                   firstPageErrorIndicatorBuilder: (_) => _buildErrorView(),
                   noItemsFoundIndicatorBuilder: (_) => _buildEmptyView(),
                 ),
@@ -81,31 +83,44 @@ class HomeView extends GetView<HomeController> {
         children: [
           const Text('Filter: ', style: TextStyle(fontWeight: FontWeight.bold)),
           Obx(
-                () =>
-                FilterChip(
-                  label: const Text('Male'),
-                  selected: controller.selectedGender.value == 'male',
-                  onSelected: (selected) => controller.setGenderFilter('male'),
-                ),
+            () => FilterChip(
+              label: const Text('Male'),
+              selected: controller.selectedGender.value == 'male',
+              onSelected: (selected) {
+                if (controller.dataLoading) {
+                  Get.showSnackbar(
+                    GetSnackBar(
+                      title: "Message",
+                      message: "Please wait for the data to load",
+                    ),
+                  );
+                } else {
+                  controller.setGenderFilter('male');
+                }
+              },
+            ),
           ),
           const SizedBox(width: 8),
           Obx(
-                () =>
-                FilterChip(
-                  label: const Text('Female'),
-                  selected: controller.selectedGender.value == 'female',
-                  onSelected: (selected) =>
-                      controller.setGenderFilter('female'),
-                ),
+            () => FilterChip(
+              label: const Text('Female'),
+              selected: controller.selectedGender.value == 'female',
+              onSelected: (selected) {
+                if (controller.dataLoading) {
+                  Get.showSnackbar(
+                    GetSnackBar(
+                      title: "Message",
+                      message: "Please wait for the data to load",
+                    ),
+                  );
+                } else {
+                  controller.setGenderFilter('female');
+                }
+              },
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildNoResultsView() {
-    return Center(
-      child: Text('No results found for "${controller.searchQuery.value}"'),
     );
   }
 
@@ -126,10 +141,6 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  Widget _buildLoadingIndicator() {
-    return const Center(child: CircularProgressIndicator());
-  }
-
   Widget _buildErrorView() {
     return Center(
       child: Column(
@@ -138,7 +149,7 @@ class HomeView extends GetView<HomeController> {
           const Icon(Icons.error_outline, size: 48, color: Colors.red),
           const SizedBox(height: 16),
           Text(
-            'Error: ${controller.errorMessage.value}',
+            'Error: ${controller.pagingController.error}',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
